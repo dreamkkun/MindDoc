@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 import { extractTextFromBuffer } from "@/lib/pdf";
-import { generateMindmapTree, type GeminiMindmapNode } from "@/lib/gemini";
+import { generateMindmapTree } from "@/lib/gemini";
+import { generateMindmapTreeWithClaude } from "@/lib/claude";
+import type { AIMindmapNode } from "@/lib/aiTypes";
 import type { MindmapNode } from "@/types/mindmap";
 
 export const runtime = "nodejs";
+// Structured-output generation can take longer than Vercel's 10s default,
+// especially on Claude with thinking enabled.
+export const maxDuration = 60;
 
 // Vercel's Node.js serverless functions hard-cap the request body at 4.5MB,
 // regardless of any limit we'd like to enforce ourselves.
@@ -12,7 +17,23 @@ const MAX_FILE_SIZE = 4 * 1024 * 1024;
 const ALLOWED_EXTENSIONS = [".pdf", ".txt", ".md"];
 const MIN_TEXT_LENGTH = 20;
 
-function attachIds(node: GeminiMindmapNode, depth = 0): MindmapNode {
+type AiProvider = "claude" | "gemini";
+
+function resolveProvider(): AiProvider | null {
+  const configured = process.env.AI_PROVIDER?.toLowerCase();
+  if (configured === "claude" || configured === "gemini") return configured;
+  if (process.env.ANTHROPIC_API_KEY) return "claude";
+  if (process.env.GEMINI_API_KEY) return "gemini";
+  return null;
+}
+
+function generateTree(provider: AiProvider, sourceText: string, maxDepth: number): Promise<AIMindmapNode> {
+  return provider === "claude"
+    ? generateMindmapTreeWithClaude(sourceText, maxDepth)
+    : generateMindmapTree(sourceText, maxDepth);
+}
+
+function attachIds(node: AIMindmapNode, depth = 0): MindmapNode {
   return {
     id: nanoid(),
     name: node.name,
@@ -51,7 +72,15 @@ export async function POST(request: NextRequest) {
     );
   }
   if (file.size > MAX_FILE_SIZE) {
-    return NextResponse.json({ success: false, error: "파일 용량은 25MB를 초과할 수 없습니다." }, { status: 400 });
+    return NextResponse.json({ success: false, error: "파일 용량은 4MB를 초과할 수 없습니다." }, { status: 400 });
+  }
+
+  const provider = resolveProvider();
+  if (!provider) {
+    return NextResponse.json(
+      { success: false, error: "AI 제공자가 설정되지 않았습니다. GEMINI_API_KEY 또는 ANTHROPIC_API_KEY를 설정하세요." },
+      { status: 500 },
+    );
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -74,18 +103,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let tree: GeminiMindmapNode | null = null;
+  let tree: AIMindmapNode | null = null;
   let lastError: unknown = null;
   for (let attempt = 0; attempt < 2 && !tree; attempt += 1) {
     try {
-      tree = await generateMindmapTree(sourceText, maxDepth);
+      tree = await generateTree(provider, sourceText, maxDepth);
     } catch (err) {
       lastError = err;
     }
   }
 
   if (!tree) {
-    console.error("generate-mindmap: Gemini request failed", lastError);
+    console.error(`generate-mindmap: ${provider} request failed`, lastError);
     return NextResponse.json(
       { success: false, error: "AI 마인드맵 생성에 실패했습니다. 잠시 후 다시 시도해주세요." },
       { status: 502 },

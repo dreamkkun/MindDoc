@@ -1,10 +1,5 @@
 import { GoogleGenerativeAI, SchemaType, type Schema } from "@google/generative-ai";
-
-export interface GeminiMindmapNode {
-  name: string;
-  color?: string;
-  children?: GeminiMindmapNode[];
-}
+import type { AIMindmapNode } from "./aiTypes";
 
 /**
  * Gemini's structured-output schema has no self-reference, so the recursive
@@ -50,7 +45,7 @@ function getClient(): GoogleGenerativeAI {
 
 const MAX_SOURCE_CHARS = 60000;
 
-export async function generateMindmapTree(sourceText: string, maxDepth: number): Promise<GeminiMindmapNode> {
+export async function generateMindmapTree(sourceText: string, maxDepth: number): Promise<AIMindmapNode> {
   const genAI = getClient();
   const model = genAI.getGenerativeModel({
     model: process.env.GEMINI_MODEL ?? "gemini-1.5-flash",
@@ -71,5 +66,5 @@ ${sourceText.slice(0, MAX_SOURCE_CHARS)}`;
 
   const result = await model.generateContent(prompt);
   const raw = result.response.text();
-  return JSON.parse(raw) as GeminiMindmapNode;
+  return JSON.parse(raw) as AIMindmapNode;
 }
