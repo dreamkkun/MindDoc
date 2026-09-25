@@ -4,7 +4,8 @@ import { useCallback, useRef, useState } from "react";
 import { Loader2, UploadCloud, X } from "lucide-react";
 import { useMindmapStore } from "@/hooks/useMindmapStore";
 
-const MAX_FILE_SIZE = 25 * 1024 * 1024;
+// Vercel's Node.js serverless functions hard-cap the request body at 4.5MB.
+const MAX_FILE_SIZE = 4 * 1024 * 1024;
 const ALLOWED_EXTENSIONS = [".pdf", ".txt", ".md"];
 
 interface UploadModalProps {
@@ -22,7 +23,7 @@ function validateFile(file: File): string | null {
     return "지원하지 않는 파일 형식입니다. (.pdf, .txt, .md)";
   }
   if (file.size > MAX_FILE_SIZE) {
-    return "파일 용량은 25MB를 초과할 수 없습니다.";
+    return "파일 용량은 4MB를 초과할 수 없습니다.";
   }
   return null;
 }
@@ -48,6 +49,10 @@ export default function UploadModal({ open, onClose }: UploadModalProps) {
         formData.append("file", file);
         formData.append("maxDepth", "4");
         const res = await fetch("/api/generate-mindmap", { method: "POST", body: formData });
+        if (res.status === 413) {
+          setError("파일 용량은 4MB를 초과할 수 없습니다.");
+          return;
+        }
         const json = await res.json();
         if (!res.ok || !json.success) {
           setError(json.error ?? "마인드맵 생성에 실패했습니다.");
@@ -85,7 +90,7 @@ export default function UploadModal({ open, onClose }: UploadModalProps) {
         </button>
         <h2 className="mb-1 text-lg font-bold text-white">문서 업로드</h2>
         <p className="mb-4 text-xs text-slate-400">
-          PDF, TXT, MD 파일을 업로드하면 AI가 핵심 개념을 마인드맵으로 정리합니다. (최대 25MB)
+          PDF, TXT, MD 파일을 업로드하면 AI가 핵심 개념을 마인드맵으로 정리합니다. (최대 4MB)
         </p>
 
         <div
@@ -109,7 +114,7 @@ export default function UploadModal({ open, onClose }: UploadModalProps) {
         >
           <UploadCloud className="h-8 w-8 text-slate-500" />
           <p className="text-sm text-slate-300">파일을 드래그하거나 클릭하여 업로드</p>
-          <p className="text-xs text-slate-500">.pdf · .txt · .md (최대 25MB)</p>
+          <p className="text-xs text-slate-500">.pdf · .txt · .md (최대 4MB)</p>
           <input
             ref={inputRef}
             type="file"

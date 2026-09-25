@@ -6,7 +6,9 @@ import type { MindmapNode } from "@/types/mindmap";
 
 export const runtime = "nodejs";
 
-const MAX_FILE_SIZE = 25 * 1024 * 1024;
+// Vercel's Node.js serverless functions hard-cap the request body at 4.5MB,
+// regardless of any limit we'd like to enforce ourselves.
+const MAX_FILE_SIZE = 4 * 1024 * 1024;
 const ALLOWED_EXTENSIONS = [".pdf", ".txt", ".md"];
 const MIN_TEXT_LENGTH = 20;
 
