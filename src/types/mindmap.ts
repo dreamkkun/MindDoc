@@ -23,6 +23,7 @@ export interface MindmapStore {
   root: MindmapNode | null;
   selectedNodeId: string | null;
   history: MindmapNode[];
+  future: MindmapNode[];
   annotations: MindmapAnnotation[];
   selectedAnnotationId: string | null;
   setRoot: (data: MindmapNode) => void;
@@ -35,6 +36,7 @@ export interface MindmapStore {
   expandAll: () => void;
   collapseAll: () => void;
   undo: () => void;
+  redo: () => void;
   addAnnotation: (x: number, y: number, text?: string) => string;
   updateAnnotationText: (id: string, text: string) => void;
   updateAnnotationPosition: (id: string, x: number, y: number) => void;

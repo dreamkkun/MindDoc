@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { nanoid } from "nanoid";
 import { FilePlus2, Sparkles, Upload } from "lucide-react";
 import { useMindmapStore } from "@/hooks/useMindmapStore";
@@ -67,8 +67,34 @@ export default function Home() {
   const setRoot = useMindmapStore((s) => s.setRoot);
   const expandAll = useMindmapStore((s) => s.expandAll);
   const collapseAll = useMindmapStore((s) => s.collapseAll);
+  const undo = useMindmapStore((s) => s.undo);
+  const redo = useMindmapStore((s) => s.redo);
+  const canUndo = useMindmapStore((s) => s.history.length > 0);
+  const canRedo = useMindmapStore((s) => s.future.length > 0);
   const mindmapRef = useRef<D3MindmapHandle>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
+      const modifier = event.ctrlKey || event.metaKey;
+      if (!modifier) return;
+      const key = event.key.toLowerCase();
+      if (key === "z" && event.shiftKey) {
+        event.preventDefault();
+        redo();
+      } else if (key === "z") {
+        event.preventDefault();
+        undo();
+      } else if (key === "y") {
+        event.preventDefault();
+        redo();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [undo, redo]);
 
   const handleToggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -126,6 +152,10 @@ export default function Home() {
         onFitToScreen={() => mindmapRef.current?.fitToScreen()}
         onToggleFullscreen={handleToggleFullscreen}
         onUpload={() => setUploadOpen(true)}
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
       />
       <main className="relative w-full flex-1">
         <D3Mindmap ref={mindmapRef} />

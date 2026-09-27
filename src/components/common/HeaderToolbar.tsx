@@ -10,7 +10,9 @@ import {
   Maximize,
   Minimize2,
   Printer,
+  Redo2,
   Sparkles,
+  Undo2,
   Upload,
 } from "lucide-react";
 import { useMindmapStore } from "@/hooks/useMindmapStore";
@@ -24,6 +26,10 @@ interface HeaderToolbarProps {
   onFitToScreen: () => void;
   onToggleFullscreen: () => void;
   onUpload: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
 export default function HeaderToolbar({
@@ -34,6 +40,10 @@ export default function HeaderToolbar({
   onFitToScreen,
   onToggleFullscreen,
   onUpload,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
 }: HeaderToolbarProps) {
   const root = useMindmapStore((s) => s.root);
   const annotations = useMindmapStore((s) => s.annotations);
@@ -130,6 +140,25 @@ export default function HeaderToolbar({
               </button>
             </div>
           )}
+        </div>
+
+        <div className="flex overflow-hidden rounded-md border border-slate-600">
+          <button
+            onClick={onUndo}
+            disabled={!canUndo}
+            title="실행 취소 (Ctrl+Z)"
+            className="flex items-center gap-1 bg-slate-700/80 px-2.5 py-1.5 text-xs font-medium text-slate-200 transition hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Undo2 className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={onRedo}
+            disabled={!canRedo}
+            title="다시 실행 (Ctrl+Shift+Z)"
+            className="flex items-center gap-1 border-l border-slate-600 bg-slate-700/80 px-2.5 py-1.5 text-xs font-medium text-slate-200 transition hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Redo2 className="h-3.5 w-3.5" />
+          </button>
         </div>
 
         <button

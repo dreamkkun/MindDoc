@@ -26,11 +26,19 @@ export const useMindmapStore = create<MindmapStore>((set, get) => ({
   root: null,
   selectedNodeId: null,
   history: [],
+  future: [],
   annotations: [],
   selectedAnnotationId: null,
 
   setRoot: (data) =>
-    set({ root: normalizeTree(data), selectedNodeId: null, history: [], annotations: [], selectedAnnotationId: null }),
+    set({
+      root: normalizeTree(data),
+      selectedNodeId: null,
+      history: [],
+      future: [],
+      annotations: [],
+      selectedAnnotationId: null,
+    }),
 
   setSelectedNodeId: (id) => set({ selectedNodeId: id }),
 
@@ -42,6 +50,7 @@ export const useMindmapStore = create<MindmapStore>((set, get) => ({
     set({
       root: updateNodeById(root, id, (node) => ({ ...node, name: trimmed })),
       history: pushHistory(history, root),
+      future: [],
     });
   },
 
@@ -55,6 +64,7 @@ export const useMindmapStore = create<MindmapStore>((set, get) => ({
     set({
       root: addChildToNode(root, parentId, newNode),
       history: pushHistory(history, root),
+      future: [],
       selectedNodeId: newNode.id,
     });
     return newNode.id;
@@ -71,6 +81,7 @@ export const useMindmapStore = create<MindmapStore>((set, get) => ({
     set({
       root: addSiblingToNode(root, targetId, newNode),
       history: pushHistory(history, root),
+      future: [],
       selectedNodeId: newNode.id,
     });
     return newNode.id;
@@ -82,6 +93,7 @@ export const useMindmapStore = create<MindmapStore>((set, get) => ({
     set({
       root: removeNodeById(root, id),
       history: pushHistory(history, root),
+      future: [],
       selectedNodeId: selectedNodeId === id ? null : selectedNodeId,
     });
   },
@@ -105,10 +117,27 @@ export const useMindmapStore = create<MindmapStore>((set, get) => ({
   },
 
   undo: () => {
-    const { history } = get();
-    if (history.length === 0) return;
+    const { root, history, future } = get();
+    if (history.length === 0 || !root) return;
     const previous = history[history.length - 1];
-    set({ root: previous, history: history.slice(0, -1) });
+    set({
+      root: previous,
+      history: history.slice(0, -1),
+      future: pushHistory(future, root),
+      selectedNodeId: null,
+    });
+  },
+
+  redo: () => {
+    const { root, history, future } = get();
+    if (future.length === 0 || !root) return;
+    const next = future[future.length - 1];
+    set({
+      root: next,
+      future: future.slice(0, -1),
+      history: pushHistory(history, root),
+      selectedNodeId: null,
+    });
   },
 
   addAnnotation: (x, y, text = "") => {
