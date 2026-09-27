@@ -5,6 +5,7 @@ import { upload } from "@vercel/blob/client";
 import { Loader2, UploadCloud, X } from "lucide-react";
 import { useMindmapStore } from "@/hooks/useMindmapStore";
 import { ALLOWED_EXTENSIONS, MAX_FILE_SIZE } from "@/lib/uploadLimits";
+import { EXTRACTION_STYLES, type ExtractionStyle } from "@/lib/extractionStyle";
 
 interface UploadModalProps {
   open: boolean;
@@ -31,6 +32,7 @@ export default function UploadModal({ open, onClose }: UploadModalProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [style, setStyle] = useState<ExtractionStyle>("detailed");
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const uploadFile = useCallback(
@@ -50,7 +52,7 @@ export default function UploadModal({ open, onClose }: UploadModalProps) {
         const res = await fetch("/api/generate-mindmap", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ blobUrl: blob.url, maxDepth: 4 }),
+          body: JSON.stringify({ blobUrl: blob.url, maxDepth: 4, style }),
         });
         const json = await res.json();
         if (!res.ok || !json.success) {
@@ -65,7 +67,7 @@ export default function UploadModal({ open, onClose }: UploadModalProps) {
         setIsLoading(false);
       }
     },
-    [setRoot, onClose],
+    [setRoot, onClose, style],
   );
 
   if (!open) return null;
@@ -91,6 +93,29 @@ export default function UploadModal({ open, onClose }: UploadModalProps) {
         <p className="mb-4 text-xs text-slate-400">
           PDF, TXT, MD 파일을 업로드하면 AI가 핵심 개념을 마인드맵으로 정리합니다. (최대 25MB)
         </p>
+
+        <div className="mb-4">
+          <p className="mb-2 text-xs font-semibold text-slate-300">정리 방식 선택</p>
+          <div className="grid grid-cols-2 gap-2">
+            {EXTRACTION_STYLES.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setStyle(option.value)}
+                className={`rounded-lg border px-3 py-2 text-left transition ${
+                  style === option.value
+                    ? "border-blue-500 bg-blue-500/10"
+                    : "border-slate-600 bg-slate-900/40 hover:border-slate-500"
+                }`}
+              >
+                <p className={`text-xs font-semibold ${style === option.value ? "text-blue-400" : "text-slate-200"}`}>
+                  {option.label}
+                </p>
+                <p className="mt-0.5 text-[11px] text-slate-500">{option.description}</p>
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div
           className={`flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-10 text-center transition ${

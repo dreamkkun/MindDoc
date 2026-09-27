@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI, SchemaType, type Schema } from "@google/generative-ai";
 import type { AIMindmapNode } from "./aiTypes";
+import { getStyleInstruction, type ExtractionStyle } from "./extractionStyle";
 
 /**
  * Gemini's structured-output schema has no self-reference, so the recursive
@@ -45,7 +46,11 @@ function getClient(): GoogleGenerativeAI {
 
 const MAX_SOURCE_CHARS = 60000;
 
-export async function generateMindmapTree(sourceText: string, maxDepth: number): Promise<AIMindmapNode> {
+export async function generateMindmapTree(
+  sourceText: string,
+  maxDepth: number,
+  style: ExtractionStyle = "detailed",
+): Promise<AIMindmapNode> {
   const genAI = getClient();
   const model = genAI.getGenerativeModel({
     model: process.env.GEMINI_MODEL ?? "gemini-3.5-flash-lite",
@@ -60,6 +65,7 @@ export async function generateMindmapTree(sourceText: string, maxDepth: number):
 - 각 하위 노드는 간결한 명사형으로 작성하고, 최대 ${maxDepth}단계 깊이까지만 구성하세요.
 - color 필드는 상위 항목(형제 그룹)별로 구분되는 HEX 색상 코드를 지정하세요.
 - 문서에 없는 내용을 지어내지 마세요.
+${getStyleInstruction(style)}
 
 --- 문서 내용 ---
 ${sourceText.slice(0, MAX_SOURCE_CHARS)}`;

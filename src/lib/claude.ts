@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import type { AIMindmapNode } from "./aiTypes";
+import { getStyleInstruction, type ExtractionStyle } from "./extractionStyle";
 
 // Structured outputs use strict JSON schema, where every property must be
 // present (nullable stands in for "optional") - so the raw shape uses
@@ -40,7 +41,11 @@ function normalize(node: RawNode, remainingDepth: number): AIMindmapNode {
   return { name: node.name, color, children: node.children.map((child) => normalize(child, remainingDepth - 1)) };
 }
 
-export async function generateMindmapTreeWithClaude(sourceText: string, maxDepth: number): Promise<AIMindmapNode> {
+export async function generateMindmapTreeWithClaude(
+  sourceText: string,
+  maxDepth: number,
+  style: ExtractionStyle = "detailed",
+): Promise<AIMindmapNode> {
   const client = getClient();
 
   const prompt = `다음은 강의 자료에서 추출한 텍스트입니다. 핵심 개념을 계층 구조로 정리하여 학습 마인드맵을 생성하세요.
@@ -48,6 +53,7 @@ export async function generateMindmapTreeWithClaude(sourceText: string, maxDepth
 - 각 하위 노드는 간결한 명사형으로 작성하고, 최대 ${maxDepth}단계 깊이까지만 구성하세요.
 - color 필드는 상위 항목(형제 그룹)별로 구분되는 HEX 색상 코드를 지정하세요.
 - 문서에 없는 내용을 지어내지 마세요.
+${getStyleInstruction(style)}
 
 --- 문서 내용 ---
 ${sourceText.slice(0, MAX_SOURCE_CHARS)}`;

@@ -7,6 +7,7 @@ import { generateMindmapTreeWithClaude } from "@/lib/claude";
 import type { AIMindmapNode } from "@/lib/aiTypes";
 import type { MindmapNode } from "@/types/mindmap";
 import { ALLOWED_EXTENSIONS } from "@/lib/uploadLimits";
+import { normalizeExtractionStyle, type ExtractionStyle } from "@/lib/extractionStyle";
 
 export const runtime = "nodejs";
 // AI generation (plus a retry on failure) can take a while, especially for
@@ -27,10 +28,15 @@ function resolveProvider(): AiProvider | null {
   return null;
 }
 
-function generateTree(provider: AiProvider, sourceText: string, maxDepth: number): Promise<AIMindmapNode> {
+function generateTree(
+  provider: AiProvider,
+  sourceText: string,
+  maxDepth: number,
+  style: ExtractionStyle,
+): Promise<AIMindmapNode> {
   return provider === "claude"
-    ? generateMindmapTreeWithClaude(sourceText, maxDepth)
-    : generateMindmapTree(sourceText, maxDepth);
+    ? generateMindmapTreeWithClaude(sourceText, maxDepth, style)
+    : generateMindmapTree(sourceText, maxDepth, style);
 }
 
 function attachIds(node: AIMindmapNode, depth = 0): MindmapNode {
@@ -59,7 +65,7 @@ function isTrustedBlobUrl(url: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
-  let payload: { blobUrl?: unknown; maxDepth?: unknown };
+  let payload: { blobUrl?: unknown; maxDepth?: unknown; style?: unknown };
   try {
     payload = await request.json();
   } catch {
@@ -68,6 +74,7 @@ export async function POST(request: NextRequest) {
 
   const { blobUrl } = payload;
   const maxDepth = Math.min(6, Math.max(1, Number(payload.maxDepth) || 4));
+  const style = normalizeExtractionStyle(payload.style);
 
   if (typeof blobUrl !== "string" || !isTrustedBlobUrl(blobUrl)) {
     return NextResponse.json({ success: false, error: "유효하지 않은 파일 URL입니다." }, { status: 400 });
@@ -124,7 +131,7 @@ export async function POST(request: NextRequest) {
   let lastError: unknown = null;
   for (let attempt = 0; attempt < 2 && !tree; attempt += 1) {
     try {
-      tree = await generateTree(provider, sourceText, maxDepth);
+      tree = await generateTree(provider, sourceText, maxDepth, style);
     } catch (err) {
       lastError = err;
     }
