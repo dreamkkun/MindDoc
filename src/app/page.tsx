@@ -84,7 +84,7 @@ export default function Home() {
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-slate-900 text-slate-100">
       <HeaderToolbar
-        title="지능형 시스템의 개념 (Intelligent Systems)"
+        title={root?.name ?? "MindDoc AI"}
         subtitle="노드 클릭 시 접기/펼치기 · 더블클릭 수정 · 휠 줌 및 드래그 이동"
         onExpandAll={expandAll}
         onCollapseAll={collapseAll}
