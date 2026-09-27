@@ -48,7 +48,7 @@ const MAX_SOURCE_CHARS = 60000;
 export async function generateMindmapTree(sourceText: string, maxDepth: number): Promise<AIMindmapNode> {
   const genAI = getClient();
   const model = genAI.getGenerativeModel({
-    model: process.env.GEMINI_MODEL ?? "gemini-1.5-flash",
+    model: process.env.GEMINI_MODEL ?? "gemini-3.5-flash-lite",
     generationConfig: {
       responseMimeType: "application/json",
       responseSchema: buildMindmapSchema(maxDepth),
