@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { nanoid } from "nanoid";
-import type { MindmapNode, MindmapStore } from "@/types/mindmap";
+import type { MindmapAnnotation, MindmapNode, MindmapStore } from "@/types/mindmap";
 import {
   addChildToNode,
   addSiblingToNode,
@@ -26,8 +26,11 @@ export const useMindmapStore = create<MindmapStore>((set, get) => ({
   root: null,
   selectedNodeId: null,
   history: [],
+  annotations: [],
+  selectedAnnotationId: null,
 
-  setRoot: (data) => set({ root: normalizeTree(data), selectedNodeId: null, history: [] }),
+  setRoot: (data) =>
+    set({ root: normalizeTree(data), selectedNodeId: null, history: [], annotations: [], selectedAnnotationId: null }),
 
   setSelectedNodeId: (id) => set({ selectedNodeId: id }),
 
@@ -107,4 +110,35 @@ export const useMindmapStore = create<MindmapStore>((set, get) => ({
     const previous = history[history.length - 1];
     set({ root: previous, history: history.slice(0, -1) });
   },
+
+  addAnnotation: (x, y, text = "") => {
+    const newAnnotation: MindmapAnnotation = { id: nanoid(), x, y, text };
+    set((state) => ({
+      annotations: [...state.annotations, newAnnotation],
+      selectedAnnotationId: newAnnotation.id,
+      selectedNodeId: null,
+    }));
+    return newAnnotation.id;
+  },
+
+  updateAnnotationText: (id, text) => {
+    set((state) => ({
+      annotations: state.annotations.map((a) => (a.id === id ? { ...a, text } : a)),
+    }));
+  },
+
+  updateAnnotationPosition: (id, x, y) => {
+    set((state) => ({
+      annotations: state.annotations.map((a) => (a.id === id ? { ...a, x, y } : a)),
+    }));
+  },
+
+  deleteAnnotation: (id) => {
+    set((state) => ({
+      annotations: state.annotations.filter((a) => a.id !== id),
+      selectedAnnotationId: state.selectedAnnotationId === id ? null : state.selectedAnnotationId,
+    }));
+  },
+
+  setSelectedAnnotationId: (id) => set({ selectedAnnotationId: id }),
 }));

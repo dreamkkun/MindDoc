@@ -7,6 +7,7 @@ import { useD3Mindmap } from "@/hooks/useD3Mindmap";
 import { collectDescendantIds, findNodeAndParent } from "@/lib/mindmapTree";
 
 interface EditState {
+  kind: "node" | "annotation";
   id: string;
   left: number;
   top: number;
@@ -39,6 +40,13 @@ const D3Mindmap = forwardRef<D3MindmapHandle>(function D3Mindmap(_props, ref) {
   const addSiblingNode = useMindmapStore((s) => s.addSiblingNode);
   const deleteNode = useMindmapStore((s) => s.deleteNode);
   const toggleCollapse = useMindmapStore((s) => s.toggleCollapse);
+  const annotations = useMindmapStore((s) => s.annotations);
+  const selectedAnnotationId = useMindmapStore((s) => s.selectedAnnotationId);
+  const setSelectedAnnotationId = useMindmapStore((s) => s.setSelectedAnnotationId);
+  const addAnnotation = useMindmapStore((s) => s.addAnnotation);
+  const updateAnnotationText = useMindmapStore((s) => s.updateAnnotationText);
+  const updateAnnotationPosition = useMindmapStore((s) => s.updateAnnotationPosition);
+  const deleteAnnotation = useMindmapStore((s) => s.deleteAnnotation);
 
   const [editState, setEditState] = useState<EditState | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
@@ -57,6 +65,7 @@ const D3Mindmap = forwardRef<D3MindmapHandle>(function D3Mindmap(_props, ref) {
       const found = root ? findNodeAndParent(root, id) : null;
       setContextMenu(null);
       setEditState({
+        kind: "node",
         id,
         left: nodeRect.left - containerRect.left - 100,
         top: nodeRect.top - containerRect.top - 14,
@@ -67,7 +76,29 @@ const D3Mindmap = forwardRef<D3MindmapHandle>(function D3Mindmap(_props, ref) {
     [root],
   );
 
-  const { fitToScreen, zoomBy } = useD3Mindmap(svgRef, root, selectedNodeId, {
+  const openEditorForAnnotation = useCallback(
+    (id: string, targetEl: SVGGElement) => {
+      const container = containerRef.current;
+      if (!container) return;
+      const elRect = targetEl.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      const annotation = annotations.find((a) => a.id === id);
+      setContextMenu(null);
+      setEditState({
+        kind: "annotation",
+        id,
+        left: elRect.left - containerRect.left,
+        top: elRect.top - containerRect.top,
+        width: Math.max(160, elRect.width + 20),
+        value: annotation?.text ?? "",
+      });
+    },
+    [annotations],
+  );
+
+  const pendingNewAnnotationRef = useRef<string | null>(null);
+
+  const { fitToScreen, zoomBy } = useD3Mindmap(svgRef, root, selectedNodeId, annotations, selectedAnnotationId, {
     onToggleCollapse: toggleCollapse,
     onSelectNode: setSelectedNodeId,
     onRequestEdit: openEditorForNode,
@@ -80,7 +111,26 @@ const D3Mindmap = forwardRef<D3MindmapHandle>(function D3Mindmap(_props, ref) {
       setContextMenu({ id, left: clientX - containerRect.left, top: clientY - containerRect.top });
     },
     onUserInteraction: closeOverlays,
+    onCreateAnnotation: (x, y) => {
+      const id = addAnnotation(x, y);
+      pendingNewAnnotationRef.current = id;
+    },
+    onSelectAnnotation: (id) => {
+      setSelectedNodeId(null);
+      setSelectedAnnotationId(id);
+    },
+    onRequestAnnotationEdit: openEditorForAnnotation,
+    onAnnotationDrag: updateAnnotationPosition,
   });
+
+  useEffect(() => {
+    const pendingId = pendingNewAnnotationRef.current;
+    if (!pendingId) return;
+    const el = svgRef.current?.querySelector<SVGGElement>(`g.annotation[data-id="${pendingId}"]`);
+    if (!el) return;
+    pendingNewAnnotationRef.current = null;
+    openEditorForAnnotation(pendingId, el);
+  }, [annotations, openEditorForAnnotation]);
 
   useImperativeHandle(
     ref,
@@ -128,9 +178,18 @@ const D3Mindmap = forwardRef<D3MindmapHandle>(function D3Mindmap(_props, ref) {
 
   const commitEdit = useCallback(() => {
     if (!editState) return;
-    updateNodeName(editState.id, editState.value);
+    if (editState.kind === "annotation") {
+      const trimmed = editState.value.trim();
+      if (!trimmed) {
+        deleteAnnotation(editState.id);
+      } else {
+        updateAnnotationText(editState.id, trimmed);
+      }
+    } else {
+      updateNodeName(editState.id, editState.value);
+    }
     setEditState(null);
-  }, [editState, updateNodeName]);
+  }, [editState, updateNodeName, updateAnnotationText, deleteAnnotation]);
 
   const handleDeleteNode = useCallback(
     (id: string) => {
@@ -151,9 +210,16 @@ const D3Mindmap = forwardRef<D3MindmapHandle>(function D3Mindmap(_props, ref) {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (editState || contextMenu) return;
-      if (!selectedNodeId || !root) return;
       const target = event.target as HTMLElement | null;
       if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
+
+      if ((event.key === "Delete" || event.key === "Backspace") && selectedAnnotationId) {
+        event.preventDefault();
+        deleteAnnotation(selectedAnnotationId);
+        return;
+      }
+
+      if (!selectedNodeId || !root) return;
 
       if (event.key === "Tab") {
         event.preventDefault();
@@ -168,13 +234,26 @@ const D3Mindmap = forwardRef<D3MindmapHandle>(function D3Mindmap(_props, ref) {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedNodeId, root, editState, contextMenu, addChildNode, addSiblingNode, handleDeleteNode]);
+  }, [
+    selectedNodeId,
+    selectedAnnotationId,
+    root,
+    editState,
+    contextMenu,
+    addChildNode,
+    addSiblingNode,
+    handleDeleteNode,
+    deleteAnnotation,
+  ]);
 
   return (
     <div
       ref={containerRef}
       className="relative h-full w-full overflow-hidden bg-slate-900"
-      onClick={() => setSelectedNodeId(null)}
+      onClick={() => {
+        setSelectedNodeId(null);
+        setSelectedAnnotationId(null);
+      }}
     >
       <svg ref={svgRef} className="h-full w-full" onClick={(e) => e.stopPropagation()} />
 
@@ -223,7 +302,14 @@ const D3Mindmap = forwardRef<D3MindmapHandle>(function D3Mindmap(_props, ref) {
               if (found && svgNode) {
                 openEditorForNode(contextMenu.id, svgNode);
               } else if (found) {
-                setEditState({ id: contextMenu.id, left: contextMenu.left, top: contextMenu.top, width: 200, value: found.node.name });
+                setEditState({
+                  kind: "node",
+                  id: contextMenu.id,
+                  left: contextMenu.left,
+                  top: contextMenu.top,
+                  width: 200,
+                  value: found.node.name,
+                });
               }
               setContextMenu(null);
             }}
@@ -267,6 +353,7 @@ const D3Mindmap = forwardRef<D3MindmapHandle>(function D3Mindmap(_props, ref) {
           <span className="text-slate-400">색상 채워짐: 접혀있는 상태 (클릭 시 확장)</span>
         </div>
         <div className="text-slate-500">더블클릭: 수정 · 우클릭: 메뉴 · Tab/Enter/Delete</div>
+        <div className="text-slate-500">빈 공간 더블클릭: 메모 추가 · 드래그로 이동</div>
       </div>
     </div>
   );

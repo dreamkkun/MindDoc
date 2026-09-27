@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import * as d3 from "d3";
-import type { MindmapNode } from "@/types/mindmap";
+import type { MindmapAnnotation, MindmapNode } from "@/types/mindmap";
 
 export const NODE_HEIGHT = 44;
 export const LEVEL_WIDTH = 260;
@@ -18,6 +18,10 @@ export interface D3MindmapHandlers {
   onRequestEdit: (id: string, targetEl: SVGGElement) => void;
   onRequestContextMenu: (id: string, clientX: number, clientY: number) => void;
   onUserInteraction: () => void;
+  onCreateAnnotation: (x: number, y: number) => void;
+  onSelectAnnotation: (id: string) => void;
+  onRequestAnnotationEdit: (id: string, targetEl: SVGGElement) => void;
+  onAnnotationDrag: (id: string, x: number, y: number) => void;
 }
 
 function hasCollapsedChildren(node: MindmapNode) {
@@ -40,6 +44,8 @@ export function useD3Mindmap(
   svgRef: React.RefObject<SVGSVGElement>,
   root: MindmapNode | null,
   selectedNodeId: string | null,
+  annotations: MindmapAnnotation[],
+  selectedAnnotationId: string | null,
   handlers: D3MindmapHandlers,
 ) {
   const gRef = useRef<SVGGElement | null>(null);
@@ -49,6 +55,8 @@ export function useD3Mindmap(
   handlersRef.current = handlers;
   const selectedIdRef = useRef(selectedNodeId);
   selectedIdRef.current = selectedNodeId;
+  const selectedAnnotationIdRef = useRef(selectedAnnotationId);
+  selectedAnnotationIdRef.current = selectedAnnotationId;
 
   // one-time setup: root <g>, zoom behavior
   useEffect(() => {
@@ -59,6 +67,7 @@ export function useD3Mindmap(
 
     const g = svg.append("g").attr("class", "mindmap-canvas");
     gRef.current = g.node();
+    g.append("g").attr("class", "annotations-layer");
 
     const zoom = d3
       .zoom<SVGSVGElement, unknown>()
@@ -70,10 +79,19 @@ export function useD3Mindmap(
 
     svg.call(zoom);
     svg.on("dblclick.zoom", null);
+    svg.on("dblclick", (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (target.closest(".node, .annotation")) return;
+      const transform = d3.zoomTransform(svgEl);
+      const rect = svgEl.getBoundingClientRect();
+      const [x, y] = transform.invert([event.clientX - rect.left, event.clientY - rect.top]);
+      handlersRef.current.onCreateAnnotation(x, y);
+    });
     zoomRef.current = zoom;
 
     return () => {
       svg.on(".zoom", null);
+      svg.on("dblclick", null);
     };
   }, [svgRef]);
 
@@ -251,6 +269,82 @@ export function useD3Mindmap(
     // render pass (instead of a separate imperative attr update) avoids racing
     // an in-flight exit transition, which would otherwise strand removed nodes.
   }, [root, selectedNodeId, render]);
+
+  // Annotations are independent of the tree layout, so they get their own
+  // render pass instead of competing with the node/link transition logic above.
+  useEffect(() => {
+    const g = gRef.current;
+    if (!g) return;
+    const layer = d3.select(g).select<SVGGElement>("g.annotations-layer");
+    if (layer.empty()) return;
+
+    const sel = layer.selectAll<SVGGElement, MindmapAnnotation>("g.annotation").data(annotations, (d) => d.id);
+
+    sel.exit().remove();
+
+    const enter = sel.enter().append("g").attr("class", "annotation").attr("data-id", (d) => d.id);
+
+    enter
+      .append("rect")
+      .attr("class", "annotation-bg")
+      .attr("rx", 6)
+      .attr("fill", "#422006")
+      .attr("stroke", "#475569")
+      .attr("stroke-width", 1);
+
+    enter
+      .append("text")
+      .attr("class", "annotation-text")
+      .attr("dy", "0.32em")
+      .style("fill", "#fde68a")
+      .style("font-size", "13px")
+      .style("font-family", "ui-sans-serif, system-ui, -apple-system, sans-serif");
+
+    const merged = enter.merge(sel);
+
+    merged.attr("transform", (d) => `translate(${d.x},${d.y})`);
+    merged.select<SVGTextElement>("text.annotation-text").text((d) => d.text || "메모 추가...");
+
+    merged.each(function (d) {
+      const textEl = this.querySelector("text.annotation-text") as SVGTextElement | null;
+      const rectEl = this.querySelector("rect.annotation-bg") as SVGRectElement | null;
+      if (!textEl || !rectEl) return;
+      const bbox = textEl.getBBox();
+      const isSelected = d.id === selectedAnnotationIdRef.current;
+      rectEl.setAttribute("x", String(bbox.x - 10));
+      rectEl.setAttribute("y", String(bbox.y - 6));
+      rectEl.setAttribute("width", String(bbox.width + 20));
+      rectEl.setAttribute("height", String(bbox.height + 12));
+      rectEl.setAttribute("stroke", isSelected ? "#f59e0b" : "#78350f");
+    });
+
+    merged
+      .style("cursor", "grab")
+      .on("click", (event, d) => {
+        event.stopPropagation();
+        handlersRef.current.onSelectAnnotation(d.id);
+      })
+      .on("dblclick", function (event, d) {
+        event.stopPropagation();
+        handlersRef.current.onRequestAnnotationEdit(d.id, this as SVGGElement);
+      })
+      .call(
+        d3
+          .drag<SVGGElement, MindmapAnnotation>()
+          .on("start", function () {
+            d3.select(this).raise().style("cursor", "grabbing");
+          })
+          .on("drag", function (event, d) {
+            d.x = event.x;
+            d.y = event.y;
+            d3.select(this).attr("transform", `translate(${d.x},${d.y})`);
+          })
+          .on("end", function (event, d) {
+            d3.select(this).style("cursor", "grab");
+            handlersRef.current.onAnnotationDrag(d.id, d.x, d.y);
+          }),
+      );
+  }, [annotations, selectedAnnotationId]);
 
   const fitToScreen = useCallback(() => {
     const svgEl = svgRef.current;

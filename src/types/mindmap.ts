@@ -11,10 +11,20 @@ export interface MindmapNode {
   y0?: number;
 }
 
+/** A free-floating text note placed anywhere on the canvas, not part of the tree. */
+export interface MindmapAnnotation {
+  id: string;
+  x: number;
+  y: number;
+  text: string;
+}
+
 export interface MindmapStore {
   root: MindmapNode | null;
   selectedNodeId: string | null;
   history: MindmapNode[];
+  annotations: MindmapAnnotation[];
+  selectedAnnotationId: string | null;
   setRoot: (data: MindmapNode) => void;
   setSelectedNodeId: (id: string | null) => void;
   updateNodeName: (id: string, name: string) => void;
@@ -25,4 +35,9 @@ export interface MindmapStore {
   expandAll: () => void;
   collapseAll: () => void;
   undo: () => void;
+  addAnnotation: (x: number, y: number, text?: string) => string;
+  updateAnnotationText: (id: string, text: string) => void;
+  updateAnnotationPosition: (id: string, x: number, y: number) => void;
+  deleteAnnotation: (id: string) => void;
+  setSelectedAnnotationId: (id: string | null) => void;
 }

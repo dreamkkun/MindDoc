@@ -1,6 +1,20 @@
 "use client";
 
-import { Eye, EyeOff, Maximize, Minimize2, Sparkles, Upload } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  Download,
+  Eye,
+  EyeOff,
+  FileImage,
+  FileText,
+  Maximize,
+  Minimize2,
+  Printer,
+  Sparkles,
+  Upload,
+} from "lucide-react";
+import { useMindmapStore } from "@/hooks/useMindmapStore";
+import { exportMindmapAsImage, exportMindmapAsPdf, printMindmap } from "@/lib/exportMindmap";
 
 interface HeaderToolbarProps {
   title: string;
@@ -21,6 +35,35 @@ export default function HeaderToolbar({
   onToggleFullscreen,
   onUpload,
 }: HeaderToolbarProps) {
+  const root = useMindmapStore((s) => s.root);
+  const annotations = useMindmapStore((s) => s.annotations);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!exportOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) setExportOpen(false);
+    };
+    window.addEventListener("click", handleClick);
+    return () => window.removeEventListener("click", handleClick);
+  }, [exportOpen]);
+
+  const runExport = async (task: () => Promise<void> | void) => {
+    setExportOpen(false);
+    if (!root) return;
+    setIsExporting(true);
+    try {
+      await task();
+    } catch (err) {
+      console.error("mindmap export failed", err);
+      window.alert("내보내기에 실패했습니다. 다시 시도해주세요.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <header className="z-20 flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-slate-700 bg-slate-800/90 px-5 py-3 backdrop-blur">
       <div className="flex items-center gap-3">
@@ -41,6 +84,54 @@ export default function HeaderToolbar({
           <Upload className="h-3.5 w-3.5" />
           업로드
         </button>
+
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setExportOpen((v) => !v);
+            }}
+            disabled={!root || isExporting}
+            className="flex items-center gap-1 rounded-md border border-slate-600 bg-slate-700/80 px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Download className="h-3.5 w-3.5" />
+            {isExporting ? "내보내는 중..." : "내보내기"}
+          </button>
+
+          {exportOpen && (
+            <div
+              className="absolute right-0 top-full z-30 mt-1 w-44 overflow-hidden rounded-md border border-slate-700 bg-slate-800 py-1 text-sm shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-slate-200 hover:bg-slate-700"
+                onClick={() => runExport(() => exportMindmapAsImage(root!, annotations, "png"))}
+              >
+                <FileImage className="h-3.5 w-3.5" /> PNG로 저장
+              </button>
+              <button
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-slate-200 hover:bg-slate-700"
+                onClick={() => runExport(() => exportMindmapAsImage(root!, annotations, "jpeg"))}
+              >
+                <FileImage className="h-3.5 w-3.5" /> JPEG로 저장
+              </button>
+              <button
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-slate-200 hover:bg-slate-700"
+                onClick={() => runExport(() => exportMindmapAsPdf(root!, annotations))}
+              >
+                <FileText className="h-3.5 w-3.5" /> PDF로 저장
+              </button>
+              <div className="my-1 border-t border-slate-700" />
+              <button
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-slate-200 hover:bg-slate-700"
+                onClick={() => runExport(() => printMindmap(root!, annotations))}
+              >
+                <Printer className="h-3.5 w-3.5" /> 인쇄 (미리보기)
+              </button>
+            </div>
+          )}
+        </div>
+
         <button
           onClick={onExpandAll}
           className="flex items-center gap-1 rounded-md border border-slate-600 bg-slate-700/80 px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:bg-slate-600"
