@@ -11,6 +11,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",
     "@google/generative-ai": "^0.24.1",
+    "@vercel/blob": "^2.8.0",
     "d3": "^7.9.0",
     "lucide-react": "^1.46.0",
     "nanoid": "^6.0.1",

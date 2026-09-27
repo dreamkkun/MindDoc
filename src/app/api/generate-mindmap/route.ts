@@ -1,20 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
+import { del } from "@vercel/blob";
 import { extractTextFromBuffer } from "@/lib/pdf";
 import { generateMindmapTree } from "@/lib/gemini";
 import { generateMindmapTreeWithClaude } from "@/lib/claude";
 import type { AIMindmapNode } from "@/lib/aiTypes";
 import type { MindmapNode } from "@/types/mindmap";
+import { ALLOWED_EXTENSIONS } from "@/lib/uploadLimits";
 
 export const runtime = "nodejs";
 // Structured-output generation can take longer than Vercel's 10s default,
 // especially on Claude with thinking enabled.
 export const maxDuration = 60;
 
-// Vercel's Node.js serverless functions hard-cap the request body at 4.5MB,
-// regardless of any limit we'd like to enforce ourselves.
-const MAX_FILE_SIZE = 4 * 1024 * 1024;
-const ALLOWED_EXTENSIONS = [".pdf", ".txt", ".md"];
 const MIN_TEXT_LENGTH = 20;
 
 type AiProvider = "claude" | "gemini";
@@ -43,36 +41,42 @@ function attachIds(node: AIMindmapNode, depth = 0): MindmapNode {
   };
 }
 
-function fileExtension(filename: string): string {
-  const dot = filename.lastIndexOf(".");
-  return dot === -1 ? "" : filename.slice(dot).toLowerCase();
+function fileExtension(pathname: string): string {
+  const dot = pathname.lastIndexOf(".");
+  return dot === -1 ? "" : pathname.slice(dot).toLowerCase();
+}
+
+/** The file was uploaded client-side straight to Vercel Blob; only fetch URLs we issued. */
+function isTrustedBlobUrl(url: string): boolean {
+  try {
+    const { hostname, protocol } = new URL(url);
+    return protocol === "https:" && hostname.endsWith(".public.blob.vercel-storage.com");
+  } catch {
+    return false;
+  }
 }
 
 export async function POST(request: NextRequest) {
-  let formData: FormData;
+  let payload: { blobUrl?: unknown; maxDepth?: unknown };
   try {
-    formData = await request.formData();
+    payload = await request.json();
   } catch {
     return NextResponse.json({ success: false, error: "요청 본문을 읽을 수 없습니다." }, { status: 400 });
   }
 
-  const file = formData.get("file");
-  const maxDepthRaw = formData.get("maxDepth");
-  const maxDepth = Math.min(6, Math.max(1, Number(maxDepthRaw) || 4));
+  const { blobUrl } = payload;
+  const maxDepth = Math.min(6, Math.max(1, Number(payload.maxDepth) || 4));
 
-  if (!(file instanceof File)) {
-    return NextResponse.json({ success: false, error: "파일이 필요합니다." }, { status: 400 });
+  if (typeof blobUrl !== "string" || !isTrustedBlobUrl(blobUrl)) {
+    return NextResponse.json({ success: false, error: "유효하지 않은 파일 URL입니다." }, { status: 400 });
   }
 
-  const extension = fileExtension(file.name);
+  const extension = fileExtension(new URL(blobUrl).pathname);
   if (!ALLOWED_EXTENSIONS.includes(extension)) {
     return NextResponse.json(
       { success: false, error: "지원하지 않는 파일 형식입니다. (.pdf, .txt, .md)" },
       { status: 400 },
     );
-  }
-  if (file.size > MAX_FILE_SIZE) {
-    return NextResponse.json({ success: false, error: "파일 용량은 4MB를 초과할 수 없습니다." }, { status: 400 });
   }
 
   const provider = resolveProvider();
@@ -83,7 +87,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const buffer = Buffer.from(await file.arrayBuffer());
+  let buffer: Buffer;
+  try {
+    const fileRes = await fetch(blobUrl);
+    if (!fileRes.ok) throw new Error(`blob fetch responded ${fileRes.status}`);
+    buffer = Buffer.from(await fileRes.arrayBuffer());
+  } catch {
+    return NextResponse.json({ success: false, error: "업로드된 파일을 불러오지 못했습니다." }, { status: 502 });
+  } finally {
+    // Best-effort cleanup - we already have the bytes we need in `buffer`.
+    del(blobUrl).catch(() => {});
+  }
+
   const mimeType = extension === ".pdf" ? "application/pdf" : "text/plain";
 
   let sourceText: string;
