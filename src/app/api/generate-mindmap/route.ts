@@ -9,9 +9,11 @@ import type { MindmapNode } from "@/types/mindmap";
 import { ALLOWED_EXTENSIONS } from "@/lib/uploadLimits";
 
 export const runtime = "nodejs";
-// Structured-output generation can take longer than Vercel's 10s default,
-// especially on Claude with thinking enabled.
-export const maxDuration = 60;
+// AI generation (plus a retry on failure) can take a while, especially for
+// larger documents or Claude with thinking enabled; 60s was cutting it too
+// close and produced real 60s timeouts on production. Vercel's Fluid Compute
+// (default for new projects) supports up to 300s on Hobby.
+export const maxDuration = 150;
 
 const MIN_TEXT_LENGTH = 20;
 
