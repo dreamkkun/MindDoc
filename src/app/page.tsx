@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { nanoid } from "nanoid";
+import { FilePlus2, Sparkles, Upload } from "lucide-react";
 import { useMindmapStore } from "@/hooks/useMindmapStore";
 import HeaderToolbar from "@/components/common/HeaderToolbar";
 import UploadModal from "@/components/modal/UploadModal";
@@ -68,11 +70,6 @@ export default function Home() {
   const mindmapRef = useRef<D3MindmapHandle>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
 
-  useEffect(() => {
-    if (!root) setRoot(SAMPLE_DATA);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const handleToggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {});
@@ -80,6 +77,44 @@ export default function Home() {
       document.exitFullscreen().catch(() => {});
     }
   };
+
+  if (!root) {
+    return (
+      <div className="flex h-screen w-screen flex-col items-center justify-center bg-slate-900 px-6 text-center text-slate-100">
+        <span className="mb-4 flex items-center gap-1.5 rounded border border-blue-500/30 bg-blue-500/20 px-3 py-1.5 text-sm font-semibold text-blue-400">
+          <Sparkles className="h-4 w-4" /> MindDoc AI
+        </span>
+        <h1 className="mb-2 max-w-lg text-2xl font-bold text-white md:text-3xl">
+          문서를 마인드맵으로 정리하세요
+        </h1>
+        <p className="mb-8 max-w-md text-sm text-slate-400">
+          강의 자료나 문서를 업로드하면 AI가 핵심 개념을 계층 구조로 정리합니다. 빈 마인드맵부터 직접 만들 수도
+          있어요.
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <button
+            onClick={() => setUploadOpen(true)}
+            className="flex items-center gap-2 rounded-md bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500"
+          >
+            <Upload className="h-4 w-4" /> 문서 업로드
+          </button>
+          <button
+            onClick={() => setRoot({ id: nanoid(), name: "새 마인드맵", color: "#3b82f6", children: [] })}
+            className="flex items-center gap-2 rounded-md border border-slate-600 bg-slate-800 px-5 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-700"
+          >
+            <FilePlus2 className="h-4 w-4" /> 새로 만들기
+          </button>
+        </div>
+        <button
+          onClick={() => setRoot(SAMPLE_DATA)}
+          className="mt-6 text-sm text-slate-500 underline-offset-2 hover:text-slate-300 hover:underline"
+        >
+          예제로 살펴보기
+        </button>
+        <UploadModal open={uploadOpen} onClose={() => setUploadOpen(false)} />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-slate-900 text-slate-100">
