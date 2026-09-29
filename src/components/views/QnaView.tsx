@@ -1,9 +1,10 @@
 "use client";
 
 import type { MindmapNode } from "@/types/mindmap";
+import { effectiveChildren } from "@/lib/mindmapTree";
 
 function isLeaf(node: MindmapNode): boolean {
-  return !node.children || node.children.length === 0;
+  return effectiveChildren(node).length === 0;
 }
 
 function QnaCard({ question, answers }: { question: string; answers: MindmapNode[] }) {
@@ -29,9 +30,13 @@ function QnaCard({ question, answers }: { question: string; answers: MindmapNode
   );
 }
 
-function QnaSection({ node }: { node: MindmapNode }) {
-  const children = node.children ?? [];
-  if (children.length === 0) return null;
+/** A node is treated as a question when every child is a leaf - which can be true of the root itself
+ * for a shallow, 2-level tree, so this runs on `root` too rather than only its children. */
+function QnaSection({ node, isRoot = false }: { node: MindmapNode; isRoot?: boolean }) {
+  const children = effectiveChildren(node);
+  if (children.length === 0) {
+    return isRoot ? <p className="mb-4 text-xl font-bold text-white">{node.name}</p> : null;
+  }
 
   const leafChildren = children.filter(isLeaf);
   const nonLeafChildren = children.filter((c) => !isLeaf(c));
@@ -43,7 +48,9 @@ function QnaSection({ node }: { node: MindmapNode }) {
 
   return (
     <section className="mb-5">
-      <p className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-400">{node.name}</p>
+      <p className={isRoot ? "mb-4 text-xl font-bold text-white" : "mb-2 text-sm font-bold uppercase tracking-wide text-slate-400"}>
+        {node.name}
+      </p>
       {leafChildren.length > 0 && (
         <ul className="mb-3 space-y-1 pl-1">
           {leafChildren.map((leaf) => (
@@ -61,14 +68,10 @@ function QnaSection({ node }: { node: MindmapNode }) {
 }
 
 export default function QnaView({ root }: { root: MindmapNode }) {
-  const children = root.children ?? [];
   return (
     <div className="h-full w-full overflow-auto bg-slate-900 px-6 py-8">
       <div className="mx-auto max-w-2xl">
-        <h2 className="mb-5 text-xl font-bold text-white">{root.name}</h2>
-        {children.map((child) => (
-          <QnaSection key={child.id} node={child} />
-        ))}
+        <QnaSection node={root} isRoot />
       </div>
     </div>
   );

@@ -48,6 +48,12 @@ export function findNodeAndParent(root: MindmapNode, id: string, parent: Mindmap
   return null;
 }
 
+/** Children regardless of collapse state - read-only views should show the full tree, not just what's expanded on the canvas. */
+export function effectiveChildren(node: MindmapNode): MindmapNode[] {
+  if (node.children && node.children.length > 0) return node.children;
+  return node._children ?? [];
+}
+
 export function collectDescendantIds(node: MindmapNode): string[] {
   const ids: string[] = [];
   const visit = (n: MindmapNode) => {
