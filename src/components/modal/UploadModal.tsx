@@ -59,7 +59,7 @@ export default function UploadModal({ open, onClose }: UploadModalProps) {
           setError(json.error ?? "마인드맵 생성에 실패했습니다.");
           return;
         }
-        setRoot(json.data);
+        setRoot(json.data, style === "qna" || style === "outline" ? style : "canvas");
         onClose();
       } catch {
         setError("네트워크 오류가 발생했습니다. 다시 시도해주세요.");

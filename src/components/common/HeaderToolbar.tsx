@@ -7,8 +7,11 @@ import {
   EyeOff,
   FileImage,
   FileText,
+  ListTree,
   Maximize,
+  MessageCircleQuestion,
   Minimize2,
+  Network,
   Printer,
   Redo2,
   Sparkles,
@@ -47,6 +50,8 @@ export default function HeaderToolbar({
 }: HeaderToolbarProps) {
   const root = useMindmapStore((s) => s.root);
   const annotations = useMindmapStore((s) => s.annotations);
+  const viewMode = useMindmapStore((s) => s.viewMode);
+  const setViewMode = useMindmapStore((s) => s.setViewMode);
   const [exportOpen, setExportOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -140,6 +145,39 @@ export default function HeaderToolbar({
               </button>
             </div>
           )}
+        </div>
+
+        <div className="flex overflow-hidden rounded-md border border-slate-600">
+          <button
+            onClick={() => setViewMode("canvas")}
+            disabled={!root}
+            title="마인드맵 보기"
+            className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${
+              viewMode === "canvas" ? "bg-blue-600 text-white" : "bg-slate-700/80 text-slate-200 hover:bg-slate-600"
+            }`}
+          >
+            <Network className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={() => setViewMode("outline")}
+            disabled={!root}
+            title="목차 보기"
+            className={`flex items-center gap-1 border-l border-slate-600 px-2.5 py-1.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${
+              viewMode === "outline" ? "bg-blue-600 text-white" : "bg-slate-700/80 text-slate-200 hover:bg-slate-600"
+            }`}
+          >
+            <ListTree className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={() => setViewMode("qna")}
+            disabled={!root}
+            title="Q&A 보기"
+            className={`flex items-center gap-1 border-l border-slate-600 px-2.5 py-1.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${
+              viewMode === "qna" ? "bg-blue-600 text-white" : "bg-slate-700/80 text-slate-200 hover:bg-slate-600"
+            }`}
+          >
+            <MessageCircleQuestion className="h-3.5 w-3.5" />
+          </button>
         </div>
 
         <div className="flex overflow-hidden rounded-md border border-slate-600">

@@ -7,6 +7,8 @@ import { useMindmapStore } from "@/hooks/useMindmapStore";
 import HeaderToolbar from "@/components/common/HeaderToolbar";
 import UploadModal from "@/components/modal/UploadModal";
 import D3Mindmap, { type D3MindmapHandle } from "@/components/canvas/D3Mindmap";
+import OutlineView from "@/components/views/OutlineView";
+import QnaView from "@/components/views/QnaView";
 import type { MindmapNode } from "@/types/mindmap";
 
 const SAMPLE_DATA: MindmapNode = {
@@ -65,6 +67,7 @@ const SAMPLE_DATA: MindmapNode = {
 export default function Home() {
   const root = useMindmapStore((s) => s.root);
   const setRoot = useMindmapStore((s) => s.setRoot);
+  const viewMode = useMindmapStore((s) => s.viewMode);
   const expandAll = useMindmapStore((s) => s.expandAll);
   const collapseAll = useMindmapStore((s) => s.collapseAll);
   const undo = useMindmapStore((s) => s.undo);
@@ -158,7 +161,13 @@ export default function Home() {
         canRedo={canRedo}
       />
       <main className="relative w-full flex-1">
-        <D3Mindmap ref={mindmapRef} />
+        {viewMode === "outline" && root ? (
+          <OutlineView root={root} />
+        ) : viewMode === "qna" && root ? (
+          <QnaView root={root} />
+        ) : (
+          <D3Mindmap ref={mindmapRef} />
+        )}
       </main>
       <UploadModal open={uploadOpen} onClose={() => setUploadOpen(false)} />
     </div>

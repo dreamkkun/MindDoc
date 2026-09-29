@@ -29,8 +29,9 @@ export const useMindmapStore = create<MindmapStore>((set, get) => ({
   future: [],
   annotations: [],
   selectedAnnotationId: null,
+  viewMode: "canvas",
 
-  setRoot: (data) =>
+  setRoot: (data, viewMode = "canvas") =>
     set({
       root: normalizeTree(data),
       selectedNodeId: null,
@@ -38,7 +39,10 @@ export const useMindmapStore = create<MindmapStore>((set, get) => ({
       future: [],
       annotations: [],
       selectedAnnotationId: null,
+      viewMode,
     }),
+
+  setViewMode: (mode) => set({ viewMode: mode }),
 
   setSelectedNodeId: (id) => set({ selectedNodeId: id }),
 

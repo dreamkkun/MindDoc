@@ -19,6 +19,8 @@ export interface MindmapAnnotation {
   text: string;
 }
 
+export type ViewMode = "canvas" | "outline" | "qna";
+
 export interface MindmapStore {
   root: MindmapNode | null;
   selectedNodeId: string | null;
@@ -26,7 +28,9 @@ export interface MindmapStore {
   future: MindmapNode[];
   annotations: MindmapAnnotation[];
   selectedAnnotationId: string | null;
-  setRoot: (data: MindmapNode) => void;
+  viewMode: ViewMode;
+  setRoot: (data: MindmapNode, viewMode?: ViewMode) => void;
+  setViewMode: (mode: ViewMode) => void;
   setSelectedNodeId: (id: string | null) => void;
   updateNodeName: (id: string, name: string) => void;
   addChildNode: (parentId: string, name?: string) => string | null;
