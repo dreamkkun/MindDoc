@@ -109,37 +109,68 @@ export default function Home() {
 
   if (!root) {
     return (
-      <div className="flex h-screen w-screen flex-col items-center justify-center bg-slate-900 px-6 text-center text-slate-100">
-        <span className="mb-4 flex items-center gap-1.5 rounded border border-blue-500/30 bg-blue-500/20 px-3 py-1.5 text-sm font-semibold text-blue-400">
-          <Sparkles className="h-4 w-4" /> MindDoc AI
-        </span>
-        <h1 className="mb-2 max-w-lg text-2xl font-bold text-white md:text-3xl">
-          문서를 마인드맵으로 정리하세요
-        </h1>
-        <p className="mb-8 max-w-md text-sm text-slate-400">
-          강의 자료나 문서를 업로드하면 AI가 핵심 개념을 계층 구조로 정리합니다. 빈 마인드맵부터 직접 만들 수도
-          있어요.
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-3">
+      <div className="relative flex h-screen w-screen flex-col items-center justify-center overflow-hidden bg-slate-900 px-6 text-center text-slate-100">
+        <svg
+          className="pointer-events-none absolute inset-0 h-full w-full"
+          viewBox="0 0 1440 900"
+          preserveAspectRatio="xMidYMid slice"
+          aria-hidden="true"
+        >
+          <g className="opacity-[0.16]" fill="none" strokeWidth="1.5">
+            <path d="M720,450 Q910,510 1100,450" stroke="#3b82f6" />
+            <path d="M720,450 Q812,627 989,719" stroke="#06b6d4" />
+            <path d="M720,450 Q660,640 720,830" stroke="#10b981" />
+            <path d="M720,450 Q543,542 451,719" stroke="#f59e0b" />
+            <path d="M720,450 Q530,390 340,450" stroke="#f43f5e" />
+            <path d="M720,450 Q628,273 451,181" stroke="#8b5cf6" />
+            <path d="M720,450 Q780,260 720,70" stroke="#ec4899" />
+            <path d="M720,450 Q897,358 989,181" stroke="#3b82f6" />
+          </g>
+          <g className="opacity-[0.22]">
+            <circle cx="720" cy="450" r="7" fill="#3b82f6" />
+            <circle cx="1100" cy="450" r="4" fill="#3b82f6" />
+            <circle cx="989" cy="719" r="4" fill="#06b6d4" />
+            <circle cx="720" cy="830" r="4" fill="#10b981" />
+            <circle cx="451" cy="719" r="4" fill="#f59e0b" />
+            <circle cx="340" cy="450" r="4" fill="#f43f5e" />
+            <circle cx="451" cy="181" r="4" fill="#8b5cf6" />
+            <circle cx="720" cy="70" r="4" fill="#ec4899" />
+            <circle cx="989" cy="181" r="4" fill="#3b82f6" />
+          </g>
+        </svg>
+
+        <div className="relative">
+          <span className="mb-4 flex items-center gap-1.5 rounded border border-blue-500/30 bg-blue-500/20 px-3 py-1.5 text-sm font-semibold text-blue-400">
+            <Sparkles className="h-4 w-4" /> MindDoc AI
+          </span>
+          <h1 className="mb-2 max-w-lg text-2xl font-bold text-white md:text-3xl">
+            문서를 마인드맵으로 정리하세요
+          </h1>
+          <p className="mb-8 max-w-md text-sm text-slate-400">
+            강의 자료나 문서를 업로드하면 AI가 핵심 개념을 계층 구조로 정리합니다. 빈 마인드맵부터 직접 만들 수도
+            있어요.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={() => setUploadOpen(true)}
+              className="flex items-center gap-2 rounded-md bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600"
+            >
+              <Upload className="h-4 w-4" /> 문서 업로드
+            </button>
+            <button
+              onClick={() => setRoot({ id: nanoid(), name: "새 마인드맵", color: "#3b82f6", children: [] })}
+              className="flex items-center gap-2 rounded-md border border-slate-600 bg-slate-800 px-5 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-700"
+            >
+              <FilePlus2 className="h-4 w-4" /> 새로 만들기
+            </button>
+          </div>
           <button
-            onClick={() => setUploadOpen(true)}
-            className="flex items-center gap-2 rounded-md bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500"
+            onClick={() => setRoot(SAMPLE_DATA)}
+            className="mt-6 text-sm text-slate-400 underline-offset-2 hover:text-slate-200 hover:underline"
           >
-            <Upload className="h-4 w-4" /> 문서 업로드
-          </button>
-          <button
-            onClick={() => setRoot({ id: nanoid(), name: "새 마인드맵", color: "#3b82f6", children: [] })}
-            className="flex items-center gap-2 rounded-md border border-slate-600 bg-slate-800 px-5 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-700"
-          >
-            <FilePlus2 className="h-4 w-4" /> 새로 만들기
+            예제로 살펴보기
           </button>
         </div>
-        <button
-          onClick={() => setRoot(SAMPLE_DATA)}
-          className="mt-6 text-sm text-slate-500 underline-offset-2 hover:text-slate-300 hover:underline"
-        >
-          예제로 살펴보기
-        </button>
         <UploadModal open={uploadOpen} onClose={() => setUploadOpen(false)} />
       </div>
     );

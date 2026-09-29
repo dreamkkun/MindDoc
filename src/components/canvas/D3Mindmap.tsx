@@ -260,8 +260,9 @@ const D3Mindmap = forwardRef<D3MindmapHandle>(function D3Mindmap(_props, ref) {
       {editState && (
         <input
           ref={editInputRef}
-          className="absolute z-20 rounded border border-amber-500 bg-slate-800 px-2 py-1 text-sm text-slate-100 shadow-lg outline-none"
+          className="absolute z-20 rounded border border-amber-500 bg-slate-800 px-2 py-1 text-sm text-slate-100 shadow-lg"
           style={{ left: editState.left, top: editState.top, width: editState.width }}
+          aria-label={editState.kind === "annotation" ? "메모 내용 수정" : "노드 이름 수정"}
           value={editState.value}
           onClick={(e) => e.stopPropagation()}
           onChange={(e) => setEditState({ ...editState, value: e.target.value })}
@@ -279,11 +280,13 @@ const D3Mindmap = forwardRef<D3MindmapHandle>(function D3Mindmap(_props, ref) {
 
       {contextMenu && root && (
         <div
+          role="menu"
           className="absolute z-30 w-44 overflow-hidden rounded-md border border-slate-700 bg-slate-800 py-1 text-sm shadow-xl"
           style={{ left: contextMenu.left, top: contextMenu.top }}
           onClick={(e) => e.stopPropagation()}
         >
           <button
+            role="menuitem"
             className="block w-full px-3 py-1.5 text-left text-slate-200 hover:bg-slate-700"
             onClick={() => {
               addChildNode(contextMenu.id);
@@ -293,6 +296,7 @@ const D3Mindmap = forwardRef<D3MindmapHandle>(function D3Mindmap(_props, ref) {
             하위 항목 추가
           </button>
           <button
+            role="menuitem"
             className="block w-full px-3 py-1.5 text-left text-slate-200 hover:bg-slate-700"
             onClick={() => {
               const found = findNodeAndParent(root, contextMenu.id);
@@ -317,6 +321,7 @@ const D3Mindmap = forwardRef<D3MindmapHandle>(function D3Mindmap(_props, ref) {
             노드 수정
           </button>
           <button
+            role="menuitem"
             className="block w-full px-3 py-1.5 text-left text-rose-400 hover:bg-slate-700 disabled:cursor-not-allowed disabled:text-slate-600"
             disabled={contextMenu.id === root.id}
             onClick={() => {
@@ -330,12 +335,18 @@ const D3Mindmap = forwardRef<D3MindmapHandle>(function D3Mindmap(_props, ref) {
       )}
 
       <div className="absolute bottom-4 right-4 z-10 flex flex-col overflow-hidden rounded-md border border-slate-700 bg-slate-800/90 shadow-lg backdrop-blur">
-        <button className="p-2 text-slate-300 hover:bg-slate-700 hover:text-white" title="확대" onClick={() => zoomBy(1.3)}>
+        <button
+          className="p-2 text-slate-300 hover:bg-slate-700 hover:text-white"
+          title="확대"
+          aria-label="확대"
+          onClick={() => zoomBy(1.3)}
+        >
           <ZoomIn size={16} />
         </button>
         <button
           className="border-t border-slate-700 p-2 text-slate-300 hover:bg-slate-700 hover:text-white"
           title="축소"
+          aria-label="축소"
           onClick={() => zoomBy(1 / 1.3)}
         >
           <ZoomOut size={16} />
@@ -352,8 +363,8 @@ const D3Mindmap = forwardRef<D3MindmapHandle>(function D3Mindmap(_props, ref) {
           <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500" />
           <span className="text-slate-400">색상 채워짐: 접혀있는 상태 (클릭 시 확장)</span>
         </div>
-        <div className="text-slate-500">더블클릭: 수정 · 우클릭: 메뉴 · Tab/Enter/Delete</div>
-        <div className="text-slate-500">빈 공간 더블클릭: 메모 추가 · 드래그로 이동</div>
+        <div className="text-slate-400">더블클릭: 수정 · 우클릭: 메뉴 · Tab/Enter/Delete</div>
+        <div className="text-slate-400">빈 공간 더블클릭: 메모 추가 · 드래그로 이동</div>
       </div>
     </div>
   );

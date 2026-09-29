@@ -91,10 +91,10 @@ export default function HeaderToolbar({
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <button
           onClick={onUpload}
-          className="flex items-center gap-1 rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-500"
+          className="flex items-center gap-1 whitespace-nowrap rounded-md bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-600"
         >
           <Upload className="h-3.5 w-3.5" />
           업로드
@@ -107,7 +107,9 @@ export default function HeaderToolbar({
               setExportOpen((v) => !v);
             }}
             disabled={!root || isExporting}
-            className="flex items-center gap-1 rounded-md border border-slate-600 bg-slate-700/80 px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
+            aria-haspopup="menu"
+            aria-expanded={exportOpen}
+            className="flex items-center gap-1 whitespace-nowrap rounded-md border border-slate-600 bg-slate-700/80 px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Download className="h-3.5 w-3.5" />
             {isExporting ? "내보내는 중..." : "내보내기"}
@@ -115,6 +117,7 @@ export default function HeaderToolbar({
 
           {exportOpen && (
             <div
+              role="menu"
               className="absolute right-0 top-full z-30 mt-1 w-44 overflow-hidden rounded-md border border-slate-700 bg-slate-800 py-1 text-sm shadow-xl"
               onClick={(e) => e.stopPropagation()}
             >
@@ -152,6 +155,8 @@ export default function HeaderToolbar({
             onClick={() => setViewMode("canvas")}
             disabled={!root}
             title="마인드맵 보기"
+            aria-label="마인드맵 보기"
+            aria-pressed={viewMode === "canvas"}
             className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${
               viewMode === "canvas" ? "bg-blue-600 text-white" : "bg-slate-700/80 text-slate-200 hover:bg-slate-600"
             }`}
@@ -162,6 +167,8 @@ export default function HeaderToolbar({
             onClick={() => setViewMode("outline")}
             disabled={!root}
             title="목차 보기"
+            aria-label="목차 보기"
+            aria-pressed={viewMode === "outline"}
             className={`flex items-center gap-1 border-l border-slate-600 px-2.5 py-1.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${
               viewMode === "outline" ? "bg-blue-600 text-white" : "bg-slate-700/80 text-slate-200 hover:bg-slate-600"
             }`}
@@ -172,6 +179,8 @@ export default function HeaderToolbar({
             onClick={() => setViewMode("qna")}
             disabled={!root}
             title="Q&A 보기"
+            aria-label="Q&A 보기"
+            aria-pressed={viewMode === "qna"}
             className={`flex items-center gap-1 border-l border-slate-600 px-2.5 py-1.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${
               viewMode === "qna" ? "bg-blue-600 text-white" : "bg-slate-700/80 text-slate-200 hover:bg-slate-600"
             }`}
@@ -185,6 +194,7 @@ export default function HeaderToolbar({
             onClick={onUndo}
             disabled={!canUndo}
             title="실행 취소 (Ctrl+Z)"
+            aria-label="실행 취소"
             className="flex items-center gap-1 bg-slate-700/80 px-2.5 py-1.5 text-xs font-medium text-slate-200 transition hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Undo2 className="h-3.5 w-3.5" />
@@ -193,6 +203,7 @@ export default function HeaderToolbar({
             onClick={onRedo}
             disabled={!canRedo}
             title="다시 실행 (Ctrl+Shift+Z)"
+            aria-label="다시 실행"
             className="flex items-center gap-1 border-l border-slate-600 bg-slate-700/80 px-2.5 py-1.5 text-xs font-medium text-slate-200 transition hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Redo2 className="h-3.5 w-3.5" />
@@ -201,28 +212,28 @@ export default function HeaderToolbar({
 
         <button
           onClick={onExpandAll}
-          className="flex items-center gap-1 rounded-md border border-slate-600 bg-slate-700/80 px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:bg-slate-600"
+          className="flex items-center gap-1 whitespace-nowrap rounded-md border border-slate-600 bg-slate-700/80 px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:bg-slate-600"
         >
           <Eye className="h-3.5 w-3.5" />
           전체 펼치기
         </button>
         <button
           onClick={onCollapseAll}
-          className="flex items-center gap-1 rounded-md border border-slate-600 bg-slate-700/80 px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:bg-slate-600"
+          className="flex items-center gap-1 whitespace-nowrap rounded-md border border-slate-600 bg-slate-700/80 px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:bg-slate-600"
         >
           <EyeOff className="h-3.5 w-3.5" />
           전체 접기
         </button>
         <button
           onClick={onFitToScreen}
-          className="flex items-center gap-1 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-500"
+          className="flex items-center gap-1 whitespace-nowrap rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-500"
         >
           <Minimize2 className="h-3.5 w-3.5" />
           화면 꽉 채우기
         </button>
         <button
           onClick={onToggleFullscreen}
-          className="flex items-center gap-1 rounded-md border border-slate-600 bg-slate-700/80 px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:bg-slate-600"
+          className="flex items-center gap-1 whitespace-nowrap rounded-md border border-slate-600 bg-slate-700/80 px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:bg-slate-600"
         >
           <Maximize className="h-3.5 w-3.5" />
           전체화면

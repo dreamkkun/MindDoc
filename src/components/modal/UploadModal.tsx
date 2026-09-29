@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
 import { Loader2, UploadCloud, X } from "lucide-react";
 import { useMindmapStore } from "@/hooks/useMindmapStore";
@@ -34,6 +34,11 @@ export default function UploadModal({ open, onClose }: UploadModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [style, setStyle] = useState<ExtractionStyle>("detailed");
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (open) panelRef.current?.focus();
+  }, [open]);
 
   const uploadFile = useCallback(
     async (file: File) => {
@@ -78,6 +83,14 @@ export default function UploadModal({ open, onClose }: UploadModalProps) {
       onClick={() => !isLoading && onClose()}
     >
       <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="upload-modal-title"
+        tabIndex={-1}
+        onKeyDown={(e) => {
+          if (e.key === "Escape" && !isLoading) onClose();
+        }}
         className="relative w-full max-w-lg rounded-xl border border-slate-700 bg-slate-800 p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
@@ -89,7 +102,9 @@ export default function UploadModal({ open, onClose }: UploadModalProps) {
         >
           <X size={18} />
         </button>
-        <h2 className="mb-1 text-lg font-bold text-white">문서 업로드</h2>
+        <h2 id="upload-modal-title" className="mb-1 text-lg font-bold text-white">
+          문서 업로드
+        </h2>
         <p className="mb-4 text-xs text-slate-400">
           PDF, TXT, MD 파일을 업로드하면 AI가 핵심 개념을 마인드맵으로 정리합니다. (최대 25MB)
         </p>
@@ -102,6 +117,7 @@ export default function UploadModal({ open, onClose }: UploadModalProps) {
                 key={option.value}
                 type="button"
                 onClick={() => setStyle(option.value)}
+                aria-pressed={style === option.value}
                 className={`rounded-lg border px-3 py-2 text-left transition ${
                   style === option.value
                     ? "border-blue-500 bg-blue-500/10"
@@ -111,7 +127,7 @@ export default function UploadModal({ open, onClose }: UploadModalProps) {
                 <p className={`text-xs font-semibold ${style === option.value ? "text-blue-400" : "text-slate-200"}`}>
                   {option.label}
                 </p>
-                <p className="mt-0.5 text-[11px] text-slate-500">{option.description}</p>
+                <p className="mt-0.5 text-[11px] text-slate-400">{option.description}</p>
               </button>
             ))}
           </div>
@@ -133,12 +149,19 @@ export default function UploadModal({ open, onClose }: UploadModalProps) {
             if (file) uploadFile(file);
           }}
           onClick={() => inputRef.current?.click()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              inputRef.current?.click();
+            }
+          }}
           role="button"
           tabIndex={0}
+          aria-label="파일을 드래그하거나 선택하여 업로드. pdf, txt, md, 최대 25메가바이트"
         >
-          <UploadCloud className="h-8 w-8 text-slate-500" />
+          <UploadCloud className="h-8 w-8 text-slate-400" />
           <p className="text-sm text-slate-300">파일을 드래그하거나 클릭하여 업로드</p>
-          <p className="text-xs text-slate-500">.pdf · .txt · .md (최대 25MB)</p>
+          <p className="text-xs text-slate-400">.pdf · .txt · .md (최대 25MB)</p>
           <input
             ref={inputRef}
             type="file"
