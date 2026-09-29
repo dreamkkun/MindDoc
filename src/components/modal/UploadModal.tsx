@@ -5,7 +5,7 @@ import { upload } from "@vercel/blob/client";
 import { Loader2, UploadCloud, X } from "lucide-react";
 import { useMindmapStore } from "@/hooks/useMindmapStore";
 import { ALLOWED_EXTENSIONS, MAX_FILE_SIZE } from "@/lib/uploadLimits";
-import { EXTRACTION_STYLES, type ExtractionStyle } from "@/lib/extractionStyle";
+import { EXTRACTION_STYLES, getLoadingMessage, type ExtractionStyle } from "@/lib/extractionStyle";
 
 interface UploadModalProps {
   open: boolean;
@@ -111,7 +111,7 @@ export default function UploadModal({ open, onClose }: UploadModalProps) {
 
         <div className="mb-4">
           <p className="mb-2 text-xs font-semibold text-slate-300">정리 방식 선택</p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {EXTRACTION_STYLES.map((option) => (
               <button
                 key={option.value}
@@ -184,7 +184,7 @@ export default function UploadModal({ open, onClose }: UploadModalProps) {
         {isLoading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-xl bg-slate-900/85 backdrop-blur">
             <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
-            <p className="text-sm text-slate-300">문서를 분석하고 마인드맵을 생성하는 중...</p>
+            <p className="text-sm text-slate-300">{getLoadingMessage(style)}</p>
           </div>
         )}
       </div>

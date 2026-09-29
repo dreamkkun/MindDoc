@@ -1,8 +1,7 @@
-export type ExtractionStyle = "summary" | "outline" | "qna" | "detailed";
+export type ExtractionStyle = "outline" | "qna" | "detailed";
 
 export const EXTRACTION_STYLES: { value: ExtractionStyle; label: string; description: string }[] = [
   { value: "detailed", label: "상세 마인드맵", description: "가능한 한 세부적으로 전체 내용을 정리" },
-  { value: "summary", label: "핵심 요약 중심", description: "가장 중요한 개념만 간결하게" },
   { value: "outline", label: "목차·구조 중심", description: "문서의 장/절 구조를 그대로 반영" },
   { value: "qna", label: "Q&A 형태", description: "질문과 답변 쌍으로 구성" },
 ];
@@ -15,8 +14,6 @@ export function normalizeExtractionStyle(value: unknown): ExtractionStyle {
 
 export function getStyleInstruction(style: ExtractionStyle): string {
   switch (style) {
-    case "summary":
-      return "- 문서 전체에서 가장 중요한 핵심 개념만 선별하여 간결하게 정리하세요. 지엽적인 세부사항, 예시, 부연설명은 과감히 생략하세요.";
     case "outline":
       return "- 문서에 장/절/소제목 구조가 있다면 그 목차 구조를 그대로 반영하여 노드를 구성하세요. 각 장/절 제목을 노드명으로 우선 사용하세요.";
     case "qna":
@@ -24,5 +21,17 @@ export function getStyleInstruction(style: ExtractionStyle): string {
     case "detailed":
     default:
       return "- 문서에 담긴 개념들을 가능한 한 세부적으로, 빠짐없이 계층 구조에 반영하세요.";
+  }
+}
+
+export function getLoadingMessage(style: ExtractionStyle): string {
+  switch (style) {
+    case "outline":
+      return "문서의 목차·구조를 분석하는 중...";
+    case "qna":
+      return "질문과 답변을 구성하는 중...";
+    case "detailed":
+    default:
+      return "문서를 분석하고 상세 마인드맵을 생성하는 중...";
   }
 }
